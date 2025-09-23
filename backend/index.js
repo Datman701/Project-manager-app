@@ -4,6 +4,7 @@ import connnectDB from './config/db.js'
 import cookieParser from 'cookie-parser'
 import authRouter from './routes/auth_routes.js'
 import projectRouter from './routes/project_routes.js'
+import taskRouter from './routes/task_routes.js'
 import cors from 'cors';
 
 dotenv.config();
@@ -22,6 +23,7 @@ app.use(cors({
 
 app.use('/api/auth' , authRouter)
 app.use('/api/project' , projectRouter)
+app.use('/api/task' ,taskRouter)
 
 
 app.listen(PORT , () =>{

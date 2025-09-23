@@ -18,6 +18,11 @@ const projectSchema = new mongoose.Schema({
     type : mongoose.Schema.Types.ObjectId,
     ref : "User"
   }],
+
+  tasks : [{
+    type : mongoose.Schema.Types.ObjectId,
+    ref :"Task"
+  }],
   status : {
     type : String,
     enum : ["active" , "completed" , "on-hold"],
