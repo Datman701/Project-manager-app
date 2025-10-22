@@ -6,8 +6,8 @@ export const createTask = async (req , res) =>{
   const {title , description , status , priority , dueDate ,assignedTo} = req.body
   const projectId = req.params.projectId
   try{
-    if(!title || !description || !status || !priority || !dueDate || !projectId || !assignedTo){
-      return res.status(400).json({message : "All the fields are required!!"})
+    if(!title || !description || !priority || !projectId || !dueDate){
+      return res.status(400).json({message : "Title, description, priority, project, and due date are required!"})
     }
 
     const project = await Project.findById(projectId)
@@ -20,21 +20,31 @@ export const createTask = async (req , res) =>{
       return res.status(403).json({ message: "Not authorized for this project" });
     }
 
+    // Validate dueDate (now required)
     const dueDateObj = new Date(dueDate);
-    if (dueDateObj <= new Date()) {
-      return res.status(400).json({message: "Due date must be in the future"})
+    const now = new Date();
+    const projectDueDate = new Date(project.dueDate);
+
+    if (dueDateObj <= now) {
+      return res.status(400).json({message: "Task due date must be in the future"})
     }
 
-    const newTask = await Task.create({
+    if (dueDateObj > projectDueDate) {
+      return res.status(400).json({message: "Task due date cannot be later than project due date"})
+    }
+
+    const taskData = {
       title,
       description,
-      status,
+      status: status || 'todo',
       priority,
       dueDate,
       projectId,
-      assignedTo,
+      assignedTo: assignedTo || req.userId,
       createdBy: req.userId
-    })
+    };
+
+    const newTask = await Task.create(taskData)
 
     // Add the new task ID to the project's tasks array
     const updatedProject = await Project.findByIdAndUpdate(
@@ -43,9 +53,15 @@ export const createTask = async (req , res) =>{
       { new: true }
     )
 
+    // Populate the task with project and assignee info
+    const populatedTask = await Task.findById(newTask._id)
+      .populate('projectId', 'title name createdBy')
+      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name email')
+
     return res.status(201).json({
       message: "Task created successfully",
-      task: newTask
+      task: populatedTask
     })
 
 
@@ -56,6 +72,36 @@ export const createTask = async (req , res) =>{
 
 }
 
+// Get all tasks for the authenticated user (across all projects)
+export const getAllTasks = async (req, res) => {
+  try {
+    // Find all projects where user is creator or member
+    const userProjects = await Project.find({
+      $or: [
+        { createdBy: req.userId },
+        { members: req.userId }
+      ]
+    });
+
+    const projectIds = userProjects.map(project => project._id);
+
+    // Get all tasks from these projects
+    const tasks = await Task.find({
+      projectId: { $in: projectIds }
+    })
+    .populate('projectId', 'title name createdBy')
+    .populate('assignedTo', 'name email')
+    .populate('createdBy', 'name email')
+    .sort({ createdAt: -1 });
+
+    return res.status(200).json(tasks);
+
+  } catch (err) {
+    console.log("error in getting all tasks", err);
+    return res.status(500).json({ message: "internal server error" });
+  }
+};
+
 export const getTasks = async (req , res) =>{
   const projectId = req.params.projectId
   try{
@@ -64,13 +110,19 @@ export const getTasks = async (req , res) =>{
       return res.status(404).json({message : "project not found"})
     }
 
-    // Get all tasks for this project
-    const tasks = await Task.find({ projectId: projectId })
+    // Check if user has access to this project
+    if (project.createdBy.toString() !== req.userId && !project.members.includes(req.userId)) {
+      return res.status(403).json({ message: "Not authorized for this project" });
+    }
 
-    return res.status(200).json({
-      message: "Tasks fetched successfully",
-      tasks: tasks
-    })
+    // Get all tasks for this project with populated data
+    const tasks = await Task.find({ projectId: projectId })
+      .populate('projectId', 'title name createdBy')
+      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name email')
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json(tasks);
 
   }catch(err){
     console.log("error in getting tasks" , err)
@@ -84,13 +136,21 @@ export const getTaskById = async (req , res) =>{
 
   try{
     const task = await Task.findById(taskId)
+      .populate('projectId', 'title name createdBy')
+      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name email');
+
     if(!task){
       return res.status(404).json({message : "task could not be found"})
     }
-    return res.status(200).json({
-      message : "Task found successfully",
-      task : task
-    })
+
+    // Check if user has access to this task
+    const project = await Project.findById(task.projectId._id);
+    if (project.createdBy.toString() !== req.userId && !project.members.includes(req.userId)) {
+      return res.status(403).json({ message: "Not authorized to view this task" });
+    }
+
+    return res.status(200).json(task)
 
   }catch(err){
     console.log("error in getting task by id" , err)
@@ -102,6 +162,13 @@ export const getTaskById = async (req , res) =>{
 export const updateTask = async (req , res) =>{
   const taskId = req.params.taskId
   const {title , description , status , priority , dueDate ,assignedTo} = req.body
+
+  console.log('Update task request received:', {
+    taskId,
+    body: req.body,
+    userId: req.userId
+  });
+
   try{
     const task = await Task.findById(taskId)
     if(!task){
@@ -124,10 +191,16 @@ export const updateTask = async (req , res) =>{
     if(assignedTo) updatedFields.assignedTo = assignedTo
     if(dueDate){
       const dueDateObj = new Date(dueDate)
+      const projectDueDate = new Date(project.dueDate);
 
       if(dueDateObj <= new Date()){
-        return res.status(400).json({message : "invalid date , the date must be in the future"})
+        return res.status(400).json({message : "Task due date must be in the future"})
       }
+
+      if(dueDateObj > projectDueDate){
+        return res.status(400).json({message : "Task due date cannot be later than project due date"})
+      }
+
       updatedFields.dueDate = dueDate
     }
 
@@ -136,11 +209,11 @@ export const updateTask = async (req , res) =>{
       updatedFields,
       {new : true}
     )
+    .populate('projectId', 'title name createdBy')
+    .populate('assignedTo', 'name email')
+    .populate('createdBy', 'name email');
 
-    return res.status(200).json({
-      message : "task updated successfully",
-      task : updatedTask
-    })
+    return res.status(200).json(updatedTask)
 
   }catch(err){
     console.log("error in updating task" , err)

@@ -44,7 +44,17 @@ export const signUp = async (req , res) =>{
       maxAge: 1000*60*60*24
     })
 
-    res.status(200).json(newUser)
+    res.status(200).json({
+      message: "User created successfully",
+      user: {
+        _id: newUser._id,
+        name: newUser.name,
+        userName: newUser.userName,
+        email: newUser.email,
+        projects: newUser.projects,
+        createdAt: newUser.createdAt
+      }
+    })
   }
     catch(err){
       res.status(500).json({message: "Ineternal server error"});
@@ -54,17 +64,17 @@ export const signUp = async (req , res) =>{
   }
 
   export const signIn = async (req , res) =>{
-    const {userName , password} = req.body
+    const {email , password} = req.body
 
     try{
-    if(!userName || !password){
+    if(!email || !password){
       return res.status(400).json({message : "Please fill in all the required fields"})
     }
 
-    const user = await User.findOne({userName : userName})
+    const user = await User.findOne({email : email})
 
     if(!user){
-      return res.status(400).json({message : "this username is not registered"})
+      return res.status(400).json({message : "this email is not registered"})
     }
 
     const password_match = await bcrypt.compare(password , user.password)
@@ -82,7 +92,17 @@ export const signUp = async (req , res) =>{
       maxAge: 1000*60*60*24
     })
 
-    res.status(200).json(user)
+    res.status(200).json({
+      message: "Login successful",
+      user: {
+        _id: user._id,
+        name: user.name,
+        userName: user.userName,
+        email: user.email,
+        projects: user.projects,
+        createdAt: user.createdAt
+      }
+    })
   }
   catch(err){
     res.status(500).json({message: "Internal server error"})
@@ -91,7 +111,7 @@ export const signUp = async (req , res) =>{
 
 }
 
-export const getMe  = async () =>{
+export const getMe  = async (req , res) =>{
   try{
   const user = await User.findById({_id : req.userId})
   if(!user){

@@ -2,19 +2,37 @@ import Project from '../models/project.js'
 import User from '../models/user.js'
 
 export const createProject = async (req , res) =>{
-  const {title , description ,  dueDate} = req.body
+  const { name, title, description, dueDate, deadline, status, priority } = req.body
 
   try{
-    if(!title || !description || !dueDate){
-      return res.status(400).json({message : "All the fields are required"})
+    // Handle both 'name' and 'title' (frontend might use either)
+    const projectTitle = name || title
+    if(!projectTitle || !description){
+      return res.status(400).json({message : "Project name and description are required"})
     }
 
-    const dueDateObj = new Date(dueDate);
-    if (dueDateObj <= new Date()) {
-      return res.status(400).json({message: "Due date must be in the future"})
+    // Handle both 'deadline' and 'dueDate'
+    const dateField = deadline || dueDate
+    let dueDateValue = null
+
+    if(dateField){
+      const dueDateObj = new Date(dateField);
+      if(isNaN(dueDateObj.getTime())){
+        return res.status(400).json({message: "Invalid date format"})
+      }
+      // Allow future dates or no date
+      dueDateValue = dateField
     }
 
-    const newProject = await Project.create({title , description  , createdBy : req.userId , members  : [req.userId] , dueDate })
+    const newProject = await Project.create({
+      title: projectTitle,
+      description,
+      createdBy: req.userId,
+      members: [req.userId],
+      dueDate: dueDateValue,
+      status: status || 'active',
+      priority: priority || 'medium'
+    })
 
     return res.status(201).json({
       message : "Project Created Successfully",
@@ -35,6 +53,8 @@ export const getProjects = async (req , res)  =>{
         {members : {$in : [req.userId]}}
       ]
     })
+    .populate('createdBy', 'name email')
+    .populate('members', 'name email')
 
     return res.status(200).json({
       message : "Projects fetched successfully",
@@ -49,14 +69,16 @@ export const getProjects = async (req , res)  =>{
 export const getProjectById = async (req , res) =>{
   try{
     const project = await Project.findById(req.params.projectId)
+      .populate('createdBy', 'name email')
+      .populate('members', 'name email')
 
     if(!project){
       return res.status(404).json({message : "project not found"})
     }
 
     // Check if user is authorized to view this project
-    const isCreator = project.createdBy.toString() === req.userId
-    const isMember = project.members.some(member => member.toString() === req.userId)
+    const isCreator = project.createdBy._id.toString() === req.userId
+    const isMember = project.members.some(member => member._id.toString() === req.userId)
 
     if(!isCreator && !isMember){
       return res.status(403).json({message : "Not authorized to view this project"})
@@ -75,36 +97,45 @@ export const getProjectById = async (req , res) =>{
 export const updateProject = async (req , res) =>{
   try{
     const projectId = req.params.projectId
-    const {title  , description  , dueDate} = req.body
+    const { name, title, description, dueDate, deadline, status, priority } = req.body
     const project = await Project.findById(projectId)
+      .populate('createdBy', 'name email')
+      .populate('members', 'name email')
 
     if(!project){
       return res.status(404).json({message : "project not found"})
     }
 
-    if(req.userId !== project.createdBy.toString()){
+    if(req.userId !== project.createdBy._id.toString()){
       return res.status(403).json({message : "Not authorized to update this project!!"})
     }
 
     let updatedFields = {}
 
-    if(title) updatedFields.title  = title
-    if(description) updatedFields.description =  description
+    // Handle both 'name' and 'title' (frontend uses 'name', model uses 'title')
+    if(name) updatedFields.title = name
+    if(title) updatedFields.title = title
+    if(description) updatedFields.description = description
+    if(status) updatedFields.status = status
+    if(priority) updatedFields.priority = priority
 
-    if(dueDate){
-      const dueDateObj = new Date(dueDate)
-
-      if(dueDateObj <= new Date()){
-        return res.status(400).json({message : "invalid date , the date must be in the future"})
+    // Handle both 'deadline' and 'dueDate' (frontend uses 'deadline', model uses 'dueDate')
+    const dateField = deadline || dueDate
+    if(dateField){
+      const dueDateObj = new Date(dateField)
+      // Allow past dates for updates (user might want to update an overdue project)
+      if(isNaN(dueDateObj.getTime())){
+        return res.status(400).json({message : "Invalid date format"})
       }
-      updatedFields.dueDate = dueDate
+      updatedFields.dueDate = dateField
     }
 
     const updatedProject = await Project.findByIdAndUpdate(
       projectId,
       updatedFields,
       {new : true}
-    )
+    ).populate('createdBy', 'name email')
+     .populate('members', 'name email')
 
     return res.status(200).json({
       message : "Project updated successfully",
@@ -112,6 +143,7 @@ export const updateProject = async (req , res) =>{
     })
 
   }catch(err){
+    console.log("Error updating project:", err)
     return res.status(500).json({message : "internal server error"  , error : err})
   }
 }
@@ -120,13 +152,15 @@ export const deleteProject = async (req , res) =>{
   try{
     const projectId = req.params.projectId
     const project = await Project.findById(projectId)
+      .populate('createdBy', 'name email')
+      .populate('members', 'name email')
 
     if(!project){
       return res.status(404).json({message : "project not found"})
     }
 
     // Check if user is authorized to delete (only creator can delete)
-    if(req.userId !== project.createdBy.toString()){
+    if(req.userId !== project.createdBy._id.toString()){
       return res.status(403).json({message : "Not authorized to delete this project"})
     }
 
@@ -143,14 +177,18 @@ export const deleteProject = async (req , res) =>{
 }
 
 export const addMember = async (req , res) =>{
-  const { userName } = req.body
+  const { email } = req.body
   const projectId = req.params.projectId
 
   try{
-    const user = await User.findOne({userName : userName})
+    if (!email) {
+      return res.status(400).json({message : "Email is required"})
+    }
+
+    const user = await User.findOne({email : email.toLowerCase()})
 
     if(!user){
-      return res.status(404).json({message : "User not found"})
+      return res.status(404).json({message : "User not found with this email address"})
     }
 
     const project = await Project.findById(projectId)
@@ -177,9 +215,14 @@ export const addMember = async (req , res) =>{
     user.projects.push(projectId)
     await user.save()
 
+    // Return populated project data
+    const populatedProject = await Project.findById(projectId)
+      .populate('createdBy', 'name email')
+      .populate('members', 'name email');
+
     return res.status(200).json({
       message: "Member added successfully",
-      project: project
+      project: populatedProject
     })
 
   }catch(err){
@@ -193,7 +236,9 @@ export const getMembers = async (req, res) => {
   const projectId = req.params.projectId
 
   try {
-    const project = await Project.findById(projectId).populate('members', 'name userName email')
+    const project = await Project.findById(projectId)
+      .populate('createdBy', 'name email')
+      .populate('members', 'name email')
 
     if (!project) {
       return res.status(404).json({ message: "Project not found" })
@@ -220,11 +265,15 @@ export const getMembers = async (req, res) => {
 }
 
 export const deleteMember = async (req , res) =>{
-  const { userName } = req.body
+  const { userId } = req.body
   const projectId = req.params.projectId
 
   try{
-    const user = await User.findOne({userName : userName})
+    if (!userId) {
+      return res.status(400).json({message : "User ID is required"})
+    }
+
+    const user = await User.findById(userId)
 
     if(!user){
       return res.status(404).json({message : "User not found"})

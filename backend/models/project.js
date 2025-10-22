@@ -25,18 +25,24 @@ const projectSchema = new mongoose.Schema({
   }],
   status : {
     type : String,
-    enum : ["active" , "completed" , "on-hold"],
+    enum : ["active" , "completed" , "on-hold", "cancelled"],
     default : "active"
-
+  },
+  priority : {
+    type : String,
+    enum : ["low" , "medium" , "high"],
+    default : "medium"
   },
   dueDate : {
     type : Date,
-    required : true
+    required : false
   },
   createdAt : {
     type : Date,
     default : Date.now
   }
+}, {
+  timestamps: true // This will automatically add createdAt and updatedAt fields
 })
 
 const Project = mongoose.model("Project" , projectSchema)
