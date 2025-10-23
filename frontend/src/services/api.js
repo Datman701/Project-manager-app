@@ -10,35 +10,15 @@ const api = axios.create({
   },
 });
 
-// Request interceptor for debugging
-api.interceptors.request.use(
-  (config) => {
-    console.log(`🚀 ${config.method?.toUpperCase()} ${config.url}`);
-    return config;
-  },
-  (error) => {
-    console.error('Request error:', error);
-    return Promise.reject(error);
-  }
-);
-
 // Response interceptor for error handling
 api.interceptors.response.use(
-  (response) => {
-    console.log(`✅ ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
-    return response;
-  },
+  (response) => response,
   (error) => {
-    console.error(`❌ ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.response?.status}`);
-
     // Handle common errors
     if (error.response?.status === 401) {
-      console.log('Unauthorized - redirecting to login');
-      // Handle token expiration
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
-
     return Promise.reject(error);
   }
 );

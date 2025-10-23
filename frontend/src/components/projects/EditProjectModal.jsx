@@ -1,38 +1,33 @@
-import { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useState, useEffect } from 'react';
 import { useUpdateProjectMutation } from '../../store/api/projectsApi';
 
 const EditProjectModal = ({ isOpen, onClose, project }) => {
-  const dispatch = useDispatch();
   const [updateProject, { isLoading }] = useUpdateProjectMutation();
 
   // Extract the actual project data (handle nested structure)
   const actualProject = project?.project || project;
 
-  console.log('EditProjectModal received project:', project);
-  console.log('EditProjectModal actual project:', actualProject);
-
   const [formData, setFormData] = useState({
-    name: actualProject?.name || actualProject?.title || '',
+    title: actualProject?.title || '',
     description: actualProject?.description || '',
     priority: actualProject?.priority || 'medium',
     status: actualProject?.status || 'active',
-    deadline: actualProject?.deadline || actualProject?.dueDate ?
-      new Date(actualProject.deadline || actualProject.dueDate).toISOString().split('T')[0] : ''
+    dueDate: actualProject?.dueDate ?
+      new Date(actualProject.dueDate).toISOString().split('T')[0] : ''
   });
 
   const [errors, setErrors] = useState({});
 
   // Update form data when project prop changes
-  useState(() => {
+  useEffect(() => {
     if (actualProject) {
       setFormData({
-        name: actualProject.name || actualProject.title || '',
+        title: actualProject.title || actualProject.name || '',
         description: actualProject.description || '',
         priority: actualProject.priority || 'medium',
         status: actualProject.status || 'active',
-        deadline: actualProject.deadline || actualProject.dueDate ?
-          new Date(actualProject.deadline || actualProject.dueDate).toISOString().split('T')[0] : ''
+        dueDate: actualProject.dueDate || actualProject.deadline ?
+          new Date(actualProject.dueDate || actualProject.deadline).toISOString().split('T')[0] : ''
       });
     }
   }, [actualProject]);
@@ -56,10 +51,10 @@ const EditProjectModal = ({ isOpen, onClose, project }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Project name is required';
-    } else if (formData.name.trim().length < 3) {
-      newErrors.name = 'Project name must be at least 3 characters';
+    if (!formData.title.trim()) {
+      newErrors.title = 'Project title is required';
+    } else if (formData.title.trim().length < 3) {
+      newErrors.title = 'Project title must be at least 3 characters';
     }
 
     if (!formData.description.trim()) {
@@ -68,8 +63,8 @@ const EditProjectModal = ({ isOpen, onClose, project }) => {
       newErrors.description = 'Description must be at least 10 characters';
     }
 
-    if (formData.deadline && new Date(formData.deadline) < new Date()) {
-      newErrors.deadline = 'Deadline cannot be in the past';
+    if (formData.dueDate && new Date(formData.dueDate) < new Date()) {
+      newErrors.dueDate = 'Due date cannot be in the past';
     }
 
     setErrors(newErrors);
@@ -84,30 +79,22 @@ const EditProjectModal = ({ isOpen, onClose, project }) => {
     }
 
     try {
-      const projectData = {
-        ...formData,
-        deadline: formData.deadline || null
-      };
-
       // Map frontend field names to backend expected names
       const updateData = {
-        id: actualProject._id,  // Use actualProject._id instead of project._id
-        name: projectData.name,  // Backend will handle name -> title mapping
-        description: projectData.description,
-        status: projectData.status,
-        priority: projectData.priority,
-        deadline: projectData.deadline  // Backend will handle deadline -> dueDate mapping
+        id: actualProject._id,
+        title: formData.title,
+        description: formData.description,
+        status: formData.status,
+        priority: formData.priority,
+        dueDate: formData.dueDate || null
       };
 
-      console.log('Sending update data:', updateData);
-      console.log('Project ID being used:', actualProject._id);
       await updateProject(updateData).unwrap();
 
       // Close modal on success
       onClose();
 
       // You could add a success notification here
-      console.log('Project updated successfully');
 
     } catch (error) {
       console.error('Failed to update project:', error);
@@ -121,12 +108,12 @@ const EditProjectModal = ({ isOpen, onClose, project }) => {
     // Reset form to original project data
     if (actualProject) {
       setFormData({
-        name: actualProject.name || actualProject.title || '',
+        title: actualProject.title || actualProject.name || '',
         description: actualProject.description || '',
         priority: actualProject.priority || 'medium',
         status: actualProject.status || 'active',
-        deadline: actualProject.deadline || actualProject.dueDate ?
-          new Date(actualProject.deadline || actualProject.dueDate).toISOString().split('T')[0] : ''
+        dueDate: actualProject.dueDate || actualProject.deadline ?
+          new Date(actualProject.dueDate || actualProject.deadline).toISOString().split('T')[0] : ''
       });
     }
     setErrors({});
@@ -153,23 +140,23 @@ const EditProjectModal = ({ isOpen, onClose, project }) => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Project Name */}
+          {/* Project Title */}
           <div>
-            <label htmlFor="edit-name" className="block text-sm font-medium text-gray-700 mb-1">
-              Project Name *
+            <label htmlFor="edit-title" className="block text-sm font-medium text-gray-700 mb-1">
+              Project Title *
             </label>
             <input
               type="text"
-              id="edit-name"
-              name="name"
-              value={formData.name}
+              id="edit-title"
+              name="title"
+              value={formData.title}
               onChange={handleInputChange}
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                errors.name ? 'border-red-300' : 'border-gray-300'
+                errors.title ? 'border-red-300' : 'border-gray-300'
               }`}
-              placeholder="Enter project name"
+              placeholder="Enter project title"
             />
-            {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+            {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
           </div>
 
           {/* Description */}
@@ -231,23 +218,23 @@ const EditProjectModal = ({ isOpen, onClose, project }) => {
             </div>
           </div>
 
-          {/* Deadline */}
+          {/* Due Date */}
           <div>
-            <label htmlFor="edit-deadline" className="block text-sm font-medium text-gray-700 mb-1">
-              Deadline (Optional)
+            <label htmlFor="edit-dueDate" className="block text-sm font-medium text-gray-700 mb-1">
+              Due Date (Optional)
             </label>
             <input
               type="date"
-              id="edit-deadline"
-              name="deadline"
-              value={formData.deadline}
+              id="edit-dueDate"
+              name="dueDate"
+              value={formData.dueDate}
               onChange={handleInputChange}
               min={new Date().toISOString().split('T')[0]}
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                errors.deadline ? 'border-red-300' : 'border-gray-300'
+                errors.dueDate ? 'border-red-300' : 'border-gray-300'
               }`}
             />
-            {errors.deadline && <p className="mt-1 text-sm text-red-600">{errors.deadline}</p>}
+            {errors.dueDate && <p className="mt-1 text-sm text-red-600">{errors.dueDate}</p>}
           </div>
 
           {/* Submit Error */}

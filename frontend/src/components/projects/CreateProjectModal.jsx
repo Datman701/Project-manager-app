@@ -1,17 +1,15 @@
 import { useState } from 'react';
-import { useDispatch } from 'react-redux';
 import { useCreateProjectMutation } from '../../store/api/projectsApi';
 
 const CreateProjectModal = ({ isOpen, onClose }) => {
-  const dispatch = useDispatch();
   const [createProject, { isLoading }] = useCreateProjectMutation();
 
   const [formData, setFormData] = useState({
-    name: '',
+    title: '',
     description: '',
     priority: 'medium',
     status: 'active',
-    deadline: ''
+    dueDate: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -35,10 +33,10 @@ const CreateProjectModal = ({ isOpen, onClose }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Project name is required';
-    } else if (formData.name.trim().length < 3) {
-      newErrors.name = 'Project name must be at least 3 characters';
+    if (!formData.title.trim()) {
+      newErrors.title = 'Project title is required';
+    } else if (formData.title.trim().length < 3) {
+      newErrors.title = 'Project title must be at least 3 characters';
     }
 
     if (!formData.description.trim()) {
@@ -47,9 +45,8 @@ const CreateProjectModal = ({ isOpen, onClose }) => {
       newErrors.description = 'Description must be at least 10 characters';
     }
 
-    // Deadline is optional, but if provided, validate it
-    if (formData.deadline && new Date(formData.deadline) <= new Date()) {
-      newErrors.deadline = 'Deadline must be in the future';
+    if (formData.dueDate && new Date(formData.dueDate) <= new Date()) {
+      newErrors.dueDate = 'Due date must be in the future';
     }
 
     setErrors(newErrors);
@@ -64,34 +61,20 @@ const CreateProjectModal = ({ isOpen, onClose }) => {
     }
 
     try {
-      // Transform frontend field names to match backend expectations
-      const projectData = {
-        name: formData.name,           // Backend will handle name -> title mapping
-        description: formData.description,
-        deadline: formData.deadline,   // Backend will handle deadline -> dueDate mapping
-        status: formData.status,
-        priority: formData.priority
-      };
-
-      console.log('Creating project with data:', projectData);
-      await createProject(projectData).unwrap();
+      await createProject(formData).unwrap();
 
       // Reset form and close modal
       setFormData({
-        name: '',
+        title: '',
         description: '',
         priority: 'medium',
         status: 'active',
-        deadline: ''
+        dueDate: ''
       });
       setErrors({});
       onClose();
 
-      // You could add a success notification here
-      console.log('Project created successfully');
-
     } catch (error) {
-      console.error('Failed to create project:', error);
       setErrors({
         submit: error?.data?.message || 'Failed to create project. Please try again.'
       });
@@ -104,7 +87,7 @@ const CreateProjectModal = ({ isOpen, onClose }) => {
       description: '',
       priority: 'medium',
       status: 'active',
-      deadline: ''
+      dueDate: ''
     });
     setErrors({});
     onClose();
@@ -132,21 +115,21 @@ const CreateProjectModal = ({ isOpen, onClose }) => {
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Project Name */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Project Name *
+            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+              Project Title *
             </label>
             <input
               type="text"
-              id="name"
-              name="name"
-              value={formData.name}
+              id="title"
+              name="title"
+              value={formData.title}
               onChange={handleInputChange}
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                errors.name ? 'border-red-300' : 'border-gray-300'
+                errors.title ? 'border-red-300' : 'border-gray-300'
               }`}
-              placeholder="Enter project name"
+              placeholder="Enter project title"
             />
-            {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+            {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
           </div>
 
           {/* Description */}
@@ -208,23 +191,23 @@ const CreateProjectModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          {/* Deadline */}
+          {/* Due Date */}
           <div>
-            <label htmlFor="deadline" className="block text-sm font-medium text-gray-700 mb-1">
-              Deadline (Optional)
+            <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 mb-1">
+              Due Date (Optional)
             </label>
             <input
               type="date"
-              id="deadline"
-              name="deadline"
-              value={formData.deadline}
+              id="dueDate"
+              name="dueDate"
+              value={formData.dueDate}
               onChange={handleInputChange}
               min={new Date().toISOString().split('T')[0]}
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                errors.deadline ? 'border-red-300' : 'border-gray-300'
+                errors.dueDate ? 'border-red-300' : 'border-gray-300'
               }`}
             />
-            {errors.deadline && <p className="mt-1 text-sm text-red-600">{errors.deadline}</p>}
+            {errors.dueDate && <p className="mt-1 text-sm text-red-600">{errors.dueDate}</p>}
           </div>
 
           {/* Submit Error */}

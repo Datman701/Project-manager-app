@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useGetMembersQuery, useAddMemberMutation, useRemoveMemberMutation } from '../../store/api/projectsApi';
+import { addToast } from '../../store/slices/uiSlice.js';
 
 const MemberManagementModal = ({ isOpen, onClose, project }) => {
   const { user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
   const [memberEmail, setMemberEmail] = useState('');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,7 +24,8 @@ const MemberManagementModal = ({ isOpen, onClose, project }) => {
 
   // Handle members data - extract the actual project from the response
   const actualProject = project?.project || project;
-  const allMembers = membersData?.members || [];
+  // Use members from project data instead of separate API call
+  const allMembers = actualProject?.members || [];
   const projectOwner = actualProject?.createdBy;
 
   // Filter out the owner from members list to avoid duplication
@@ -65,7 +68,13 @@ const MemberManagementModal = ({ isOpen, onClose, project }) => {
       }).unwrap();
 
       setMemberEmail('');
-      console.log('Member added successfully!');
+      setErrors({});
+
+      // Show success toast
+      dispatch(addToast({
+        type: 'success',
+        message: 'Member added successfully!'
+      }));
 
     } catch (error) {
       console.error('Failed to add member:', error);
@@ -79,14 +88,23 @@ const MemberManagementModal = ({ isOpen, onClose, project }) => {
 
   // Handle remove member
   const handleRemoveMember = async (member) => {
-    if (window.confirm(`Remove ${member.name || member.email} from this project?`)) {
+    if (window.confirm(`Remove ${member.name || member.email} from this project?\n\nNote: This will also delete all tasks assigned to or created by this user in this project.`)) {
       try {
-        await removeMember({
+        const result = await removeMember({
           projectId: actualProject._id,
           userData: { userId: member._id }
         }).unwrap();
 
-        console.log('Member removed successfully!');
+        // Show success toast with task cleanup info
+        const tasksDeleted = result?.tasksDeleted || 0;
+        const message = tasksDeleted > 0
+          ? `Member removed successfully! ${tasksDeleted} task(s) were also deleted.`
+          : 'Member removed successfully!';
+
+        dispatch(addToast({
+          type: 'success',
+          message: message
+        }));
 
       } catch (error) {
         console.error('Failed to remove member:', error);
@@ -258,35 +276,36 @@ const MemberManagementModal = ({ isOpen, onClose, project }) => {
                 )}
 
                 {/* Members */}
-                {members.map((member) => (
-                  <div key={member._id} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center text-white font-medium">
-                        {getMemberAvatar(member)}
+                {members.map((member) => {
+                  return (
+                    <div key={member._id} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center text-white font-medium">
+                          {getMemberAvatar(member)}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{member.name || member.email}</p>
+                          <p className="text-sm text-gray-600">{member.email}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{member.name || member.email}</p>
-                        <p className="text-sm text-gray-600">{member.email}</p>
+                      <div className="flex items-center space-x-2">
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
+                          Member
+                        </span>
+                        {/* Show delete button only for project owners */}
+                        {isProjectOwner && (
+                          <button
+                            onClick={() => handleRemoveMember(member)}
+                            className="px-3 py-1 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded border border-red-200 hover:border-red-300 transition-colors"
+                            title="Remove member from project"
+                          >
+                            Delete Member
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
-                        Member
-                      </span>
-                      {isProjectOwner && (
-                        <button
-                          onClick={() => handleRemoveMember(member)}
-                          className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                          title="Remove member"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {members.length === 0 && (
                   <div className="text-center py-4 text-gray-500">

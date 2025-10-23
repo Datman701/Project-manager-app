@@ -103,15 +103,19 @@ const Tasks = () => {
     dispatch(setSearchTerm(e.target.value));
   };
 
-  // Handle status change
-  const handleStatusChange = async (taskId, newStatus) => {
-    console.log('Attempting to update task:', taskId, 'to status:', newStatus);
+    // Handle status change
+  const handleStatusChange = async (taskId, newStatus, task) => {
+    // Check if current user is the one who created/assigned the task
+    const isTaskCreator = task?.createdBy?._id === user?._id || task?.createdBy === user?._id;
+
+    if (!isTaskCreator) {
+      alert('Only the person who assigned this task can change its status.');
+      return;
+    }
+
     try {
-      const result = await updateTask({ taskId, status: newStatus }).unwrap();
-      console.log('Task status updated successfully:', result);
+      await updateTask({ taskId, status: newStatus }).unwrap();
     } catch (error) {
-      console.error('Failed to update task status:', error);
-      console.error('Error details:', error?.data || error?.message || error);
       alert('Failed to update task status. Please try again.');
     }
   };

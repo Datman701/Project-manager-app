@@ -58,7 +58,7 @@ const ProjectDetail = () => {
       case 'active': return 'bg-green-500';
       case 'on-hold': return 'bg-yellow-500';
       case 'completed': return 'bg-blue-500';
-      case 'cancelled': return 'bg-gray-500';
+      case 'cancelled': return 'bg-yellow-500';
       default: return 'bg-gray-400';
     }
   };
@@ -127,7 +127,6 @@ const ProjectDetail = () => {
       await deleteTask(selectedTask._id).unwrap();
       setShowTaskDeleteModal(false);
       setSelectedTask(null);
-      console.log('Task deleted successfully');
     } catch (error) {
       console.error('Failed to delete task:', error);
     }
@@ -176,29 +175,6 @@ const ProjectDetail = () => {
     <Layout>
       {/* Header */}
       <div className="mb-8">
-        {/* Breadcrumb */}
-        <nav className="flex mb-6" aria-label="Breadcrumb">
-          <ol className="flex items-center space-x-3">
-            <li>
-              <Link to="/projects" className="text-gray-500 hover:text-gray-700 text-sm">
-                Projects
-              </Link>
-            </li>
-            <li>
-              <svg className="w-4 h-4 text-gray-400 mx-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-              </svg>
-            </li>
-            <li>
-              <span className="text-gray-900 font-medium text-sm">
-                {(() => {
-                  const actualProject = project?.project || project;
-                  return actualProject?.title || actualProject?.name || 'Unknown Project';
-                })()}
-              </span>
-            </li>
-          </ol>
-        </nav>
 
         {/* Project Header */}
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
@@ -282,7 +258,7 @@ const ProjectDetail = () => {
             </button>
             <button
               onClick={() => setShowDeleteModal(true)}
-              className="inline-flex items-center px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors"
+              className="inline-flex items-center px-4 py-2 border border-red-400 text-red-800 rounded-lg hover:bg-red-50 hover:border-red-500 transition-colors"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -594,9 +570,24 @@ const ProjectDetail = () => {
                           <div className="text-sm text-gray-500">{member.email}</div>
                         </div>
                       </div>
-                      <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
-                        Member
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
+                          Member
+                        </span>
+                        {/* Show delete button only for project owners */}
+                        {user && actualProject?.createdBy && user._id === actualProject.createdBy._id && (
+                          <button
+                            onClick={() => {
+                              // We can reuse the same modal functionality
+                              setShowMembersModal(true);
+                            }}
+                            className="px-3 py-1 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded border border-red-200 hover:border-red-300 transition-colors"
+                            title="Remove member (opens member management)"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
 

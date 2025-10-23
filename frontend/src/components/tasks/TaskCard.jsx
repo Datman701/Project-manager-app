@@ -190,7 +190,7 @@ const TaskCard = ({ task, onEdit, onDelete, onStatusChange, onClick, isDragging 
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onStatusChange(task._id, 'todo');
+                  onStatusChange(task._id, 'todo', task);
                 }}
                 className="flex-1 text-xs py-1 px-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
               >
@@ -201,7 +201,7 @@ const TaskCard = ({ task, onEdit, onDelete, onStatusChange, onClick, isDragging 
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onStatusChange(task._id, 'in-progress');
+                  onStatusChange(task._id, 'in-progress', task);
                 }}
                 className="flex-1 text-xs py-1 px-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors"
               >
@@ -212,7 +212,7 @@ const TaskCard = ({ task, onEdit, onDelete, onStatusChange, onClick, isDragging 
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onStatusChange(task._id, 'completed');
+                  onStatusChange(task._id, 'completed', task);
                 }}
                 className="flex-1 text-xs py-1 px-2 text-green-600 hover:text-green-800 hover:bg-green-100 rounded transition-colors"
               >
