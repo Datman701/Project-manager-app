@@ -137,6 +137,6 @@ VITE_API_BASE_URL=https://<your-backend-app>.onrender.com/api
 - If you see a delay or error, try refreshing or waiting and retrying the action.
 - For best experience, use Chrome or Firefox on desktop or mobile.
 - If you encounter login issues, make sure cookies are enabled and you are using the deployed URLs.
--link to frontend repo : https://github.com/Datman701/Project-manager-frontend
--link to backend repo  : https://github.com/Datman701/Project-manager-backend
+-link to frontend repo : https://github.com/Datman701/Project-manager-frontend.
+-link to backend repo  : https://github.com/Datman701/Project-manager-backend.
 
