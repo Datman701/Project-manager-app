@@ -110,18 +110,34 @@ VITE_API_BASE_URL=https://<your-backend-app>.onrender.com/api
 - Local development will not persist login cookies unless you use HTTPS locally, due to browser security with `secure: true` cookies.
 - For project submission, this is the correct and secure setup.
 
-**How to Deploy:**
-1. Deploy backend to Render, set up environment variables (MongoDB URI, JWT secret, etc.).
-2. Deploy frontend to Vercel, set `VITE_API_BASE_URL` to your Render backend URL with `/api`.
-3. Add your Vercel frontend URL to the backend CORS config.
-4. Add `0.0.0.0/0` to MongoDB Atlas IP Access List for demo/testing.
-5. Test the deployed app at your Vercel URL.
+**How it was Deployed:**
+-(split the project into 2 repos , a frontend repo and a backend repo)
+1. Deployed backend to Render, set up environment variables (MongoDB URI, JWT secret, etc.).
+2. Deployed frontend to Vercel, set `VITE_API_BASE_URL` to your Render backend URL with `/api`.
+3. Added my Vercel frontend URL to the backend CORS config.
+4. Added `0.0.0.0/0` to MongoDB Atlas IP Access List for demo/testing.
+5. Tested the deployed app at your Vercel URL.
 
-## Customization
+## What More Can Be Done
 
-- Update Tailwind config for custom colors or safelisting dynamic classes.
-- See `frontend/src/pages/ProjectDetail.jsx` for status color logic.
+- Add drag-and-drop task sorting (using dnd-kit or similar)
+- Implement notifications (email, in-app, or push)
+- Add user profile editing and avatar upload
+- Integrate project export (PDF/CSV)
+- Add project activity logs/history
+- Add dark mode toggle
+- Add admin dashboard for analytics
+- Better cleanup of the analytics
+- Better styling
 
-## License
+## User Guidelines & Tips
 
-MIT
+- **Refresh the page** after making changes (like creating/editing/deleting projects or tasks) to see the latest updates, especially on cloud deployments.
+- **Wait a few seconds** after actions—free cloud instances (Render, Vercel) may take time to wake up or process requests due to cold starts.
+- If you see a delay or error, try refreshing or waiting and retrying the action.
+- For best experience, use Chrome or Firefox on desktop or mobile.
+- If you encounter login issues, make sure cookies are enabled and you are using the deployed URLs.
+
+-link to frontend repo - https://github.com/Datman701/Project-manager-frontend
+-link to backend repo  - https://github.com/Datman701/Project-manager-backend
+
