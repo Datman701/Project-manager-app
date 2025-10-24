@@ -85,11 +85,37 @@ npm run dev
 
 - For production: `npm run build` and deploy the `dist` folder.
 
+
 ## Deployment
 
-1. Build the frontend: `npm run build` (in `frontend/`).
-2. Deploy the backend and frontend `dist` folder to your server or hosting provider.
-3. Set environment variables for production.
+### Production Deployment (Recommended for Submission)
+
+- **Frontend:** Deployed on [Vercel](https://vercel.com/)
+- **Backend:** Deployed on [Render](https://render.com/)
+- **Database:** MongoDB Atlas (cloud-hosted)
+
+**Frontend Environment Variable:**
+```
+VITE_API_BASE_URL=https://<your-backend-app>.onrender.com/api
+```
+
+**Backend CORS:**
+- CORS is configured to allow requests from the deployed Vercel frontend URL.
+
+**Authentication Cookies:**
+- Cookies are set with `secure: true` and `sameSite: 'none'` for cross-origin authentication over HTTPS.
+- This is required for Vercel/Render deployments.
+
+**Note:**
+- Local development will not persist login cookies unless you use HTTPS locally, due to browser security with `secure: true` cookies.
+- For project submission, this is the correct and secure setup.
+
+**How to Deploy:**
+1. Deploy backend to Render, set up environment variables (MongoDB URI, JWT secret, etc.).
+2. Deploy frontend to Vercel, set `VITE_API_BASE_URL` to your Render backend URL with `/api`.
+3. Add your Vercel frontend URL to the backend CORS config.
+4. Add `0.0.0.0/0` to MongoDB Atlas IP Access List for demo/testing.
+5. Test the deployed app at your Vercel URL.
 
 ## Customization
 
