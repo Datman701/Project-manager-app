@@ -140,3 +140,6 @@ VITE_API_BASE_URL=https://<your-backend-app>.onrender.com/api
 -link to frontend repo : https://github.com/Datman701/Project-manager-frontend.
 -link to backend repo  : https://github.com/Datman701/Project-manager-backend.
 
+## getting started
+-test accounts : testuser1@example.com , testuser2@example.com , both have passwords : Test123
+
